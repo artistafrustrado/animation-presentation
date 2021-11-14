@@ -13,7 +13,7 @@ for file in dirs:
     image = {
             "image" :       file,
             "subtitle" :    "Subtitle",
-            "duation" :     72,
+            "duration" :     72,
             "type" :        "image"
             }
     images.append(image)

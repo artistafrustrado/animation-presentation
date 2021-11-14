@@ -11,12 +11,18 @@ class AnimationBuilder:
 
         def __init__(self):
             self.__json_file = "../media.json"
-            self.__startFrame = 0
-            self.__startEnd = 0
-            self.__imageDirectory = "../images"
+            self.__json_file = "/home/artista/3D/maria-bernade/media.json"
+            
+            self.__frameStart = 0
+            self.__frameEnd = 0
+            self.__imageDirectory = "/home/artista/3D/maria-bernade/images"            
+            self.__assetsDirectory = "/home/artista/3D/maria-bernade/assets"
+
+            self.__backgroundChannel = 0
             self.__imageChannel = 2
-            self.__subtitlesChannel = 4
             self.__subtitlesBackgroundChannel = 3
+            self.__subtitlesChannel = 4
+
             self.__textPositionX = 0
             self.__textPositionY = 0
 
@@ -31,7 +37,10 @@ class AnimationBuilder:
             bpy.context.scene.render.film_transparent = True
 
             bpy.context.scene.view_settings.look = 'Medium Contrast'
-
+             
+            area = bpy.context.area
+            old_type = area.type
+            area.type = 'SEQUENCE_EDITOR'
 
         def __addMovies(self, image):
                 pass
@@ -43,46 +52,53 @@ class AnimationBuilder:
                 pass
 
         def __addImages(self, image):
-#            self.__frameStart = self.__frameEnd + 1
-#            self.__frameEnd = self.__frameEnd + image["duration"]
+            area = bpy.context.area
+            old_type = area.type
+            area.type = 'SEQUENCE_EDITOR'
 
             bpy.ops.sequencer.image_strip_add(
-                    directory = self.__imageDirectory, 
+                    directory = self.__imageDirectory,
                     files = [{"name": image["image"]}], 
                     relative_path = True, show_multiview = False, 
                     frame_start = self.__frameStart, frame_end = self.__frameEnd, 
-                    channel = self.__imageChannel, fit_method = 'FIT')
-                    #bpy.ops.transform.seq_slide(value=(7, 0))
-                    
-#           self.__addSubtitle(self.frameStart, selfframeEnd, image)
+                    channel = self.__imageChannel, fit_method = 'FIT')                    
+            bpy.context.active_sequence_strip.blend_type = 'ALPHA_OVER'
+            area.type = old_type 
 
-        def __addSubitlesBackground(self, frameStart, frameEnd, image):
-            assetDirrectory = "../../assets/"
-
+        def __addSubitlesBackground(self, frameStart, frameEnd):
+            area = bpy.context.area
+            old_type = area.type
+            area.type = 'SEQUENCE_EDITOR'
+            
             bpy.ops.sequencer.image_strip_add(
-                    directory = assetsDirectory, 
+                    directory = self.__assetsDirectory, 
                     files = [{"name": "subtitles.png"}], 
                     relative_path = True, show_multiview = False, 
                     frame_start = frameStart, frame_end = frameEnd, 
                     channel = self.__subtitlesBackgroundChannel,
                     fit_method = 'FIT')
-        
-        def __addSubptitle(self, frameStart, frameEnd, image):
+
+            area.type = old_type 
+            bpy.context.active_sequence_strip.blend_type = 'ALPHA_OVER'
+
+        def __addSubtitle(self, frameStart, frameEnd, image):
             bpy.context.active_sequence_strip.text = image["subtitle"]
-            bpy.ops.font.open(filepath="//../../../../../usr/share/fonts/exo-2/Exo2[wght].ttf", relative_path=True)
+            bpy.ops.font.open(filepath="/usr/share/fonts/exo-2/Exo2[wght].ttf", 
+                relative_path=True)
             bpy.context.active_sequence_strip.use_bold = True
             bpy.context.active_sequence_strip.font_size = 30
 
-
         def __addBackground(self, frameStart, frameEnd):
-            #bpy.ops.sequencer.effect_strip_add(type='COLOR', frame_start=1, frame_end=26, channel=1)
+            area = bpy.context.area
+            old_type = area.type
+            area.type = 'SEQUENCE_EDITOR'
+            print("+ Add Background")
             bpy.ops.sequencer.effect_strip_add(
                     type = 'COLOR', frame_start = frameStart, frame_end = frameEnd, 
                     channel = self.__backgroundChannel)
             bpy.context.active_sequence_strip.color = (1, 1, 1)
-            #bpy.ops.transform.seq_slide(value=(71, 0))
-
-
+#            bpy.context.active_sequence_strip.blend_type = 'ALPHA_OVER'
+            area.type = old_type 
 
         def run(self):
             
@@ -96,10 +112,10 @@ class AnimationBuilder:
             #print(images)
             for image in images:
                 print(image)
-                self.__frameStart = self.__frameEnd + 1
+                self.__frameStart = self.__frameEnd 
                 self.__frameEnd = self.__frameEnd + image["duration"]
-#                if image["type"] == "image":
-#                    self.__addImage(image)
+                if image["type"] == "image":
+                    self.__addImages(image)
                 if image["type"] == "movies":
                     sef.__addMovies(image)
                 if image["type"] == "audio":
@@ -107,12 +123,9 @@ class AnimationBuilder:
                 if image["type"] == "soudtrack":
                     sef.__addSoundtrack(image)
 
-
-
-
             bpy.context.scene.frame_end = self.__frameEnd 
-            self.__addSubtitlesBackground(self.__frameStart, self.__frameEnd)
-            self.__addBackground(delf.__frameStart, self.__frameEnd)
+            self.__addSubitlesBackground(self.__frameStart, self.__frameEnd)
+            self.__addBackground(self.__frameStart, self.__frameEnd)
 
 if __name__ == "__main__":
     ani = AnimationBuilder()
