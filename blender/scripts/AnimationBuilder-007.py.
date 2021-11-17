@@ -15,6 +15,11 @@ class AnimationBuilder:
             self.__frameEnd = 0
             self.__imageDirectory = "/home/artista/3D/maria-bernade/images/"
             self.__assetsDirectory = "/home/artista/3D/maria-bernade/assets/"
+            self.__imageSequenceDirectory = "/home/artista/3D/maria-bernade/animation/"
+            self.__movieDirectory = "/home/artista/3D/maria-bernade/movie/"
+            self.__audioirectory = "/home/artista/3D/maria-bernade/audio/"
+            self.__soundtrackDirectory = "/home/artista/3D/maria-bernade/soundtrack/"
+
             self.__imageChannel = 2
             self.__subtitlesChannel = 4
             self.__subtitlesBackgroundChannel = 3
@@ -44,8 +49,8 @@ class AnimationBuilder:
                 pass
 
         def __addImage(self, image):
-            self.__frameStart = self.__frameEnd
-            self.__frameEnd = self.__frameEnd + image["duration"]
+#            self.__frameStart = self.__frameEnd
+#            self.__frameEnd = self.__frameEnd + image["duration"]
             
             area = bpy.context.area
             old_type = area.type
@@ -66,6 +71,7 @@ class AnimationBuilder:
             area = bpy.context.area
             old_type = area.type
             area.type = 'SEQUENCE_EDITOR'
+            frameStart = 0
 
             bpy.ops.sequencer.image_strip_add(
                     directory = self.__assetsDirectory, 
@@ -92,6 +98,11 @@ class AnimationBuilder:
             bpy.ops.font.open(filepath="//../../../../../usr/share/fonts/exo-2/Exo2[wght].ttf", relative_path=True)
             bpy.context.active_sequence_strip.use_bold = True
             bpy.context.active_sequence_strip.font_size = 30
+            bpy.context.active_sequence_strip.align_x = 'RIGHT'
+
+            
+            bpy.context.active_sequence_strip.transform.offset_x = 800
+            bpy.context.active_sequence_strip.transform.offset_y = -480
             
             area.type = old_type 
 
@@ -99,6 +110,7 @@ class AnimationBuilder:
             area = bpy.context.area
             old_type = area.type
             area.type = 'SEQUENCE_EDITOR'
+            frameStart = 0
             
             #bpy.ops.sequencer.effect_strip_add(type='COLOR', frame_start=0, frame_end=self.__frameEnd, channel=1)
             bpy.ops.sequencer.effect_strip_add(
@@ -111,9 +123,78 @@ class AnimationBuilder:
             bpy.context.active_sequence_strip.blend_type = 'ALPHA_OVER'
 
             area.type = old_type 
+            
+        def cleanup(self):
+            context = bpy.context
+            scene = context.scene
+            seq = scene.sequence_editor
+
+            # stips meta_strips 
+            for strip in seq.sequences:
+                print(strip.name)
+            # all strips
+            for strip in seq.sequences_all:
+                print(strip.name)
+            #remove
+            for strip in seq.sequences:
+                seq.sequences.remove(strip)
+                
+        def __addImageSequene(self, image):
+            pass
+            dirs = os.listdir( self.__imageSequenceDirectory + "/" + image )
+
+            files = []
+            for file in dirs:
+                print(file)
+                files.append(file)
+                
+            area = bpy.context.area
+            old_type = area.type
+            area.type = 'SEQUENCE_EDITOR'
+
+            bpy.ops.sequencer.image_strip_add(
+                    directory = self.__imageDirectory, 
+                    files = [{"name": files}], 
+                    relative_path = True, show_multiview = False, 
+                    frame_start = self.__frameStart, frame_end = self.__frameEnd, 
+                    channel = self.__imageChannel, fit_method = 'FIT')
+                    #bpy.ops.transform.seq_slide(value=(7, 0))
+            self.__addSubtitle(self.__frameStart, self.__frameEnd, image)
+            area.type = old_type 
+                
+            return len(files)
+        
+        def __addMovie(self, image):
+            file = self.__movieDirectory + '/mvies/';
+            bpy.ops.sequencer.movie_strip_add(
+            filepath=image["image"], 
+            file = self.__movieDirectory , 
+            files=[{"name": file, "name": file}], 
+            relative_path=True, show_multiview=False, 
+            frame_start=3048, channel=1, fit_method='FIT', 
+            set_view_transform=False, 
+            use_framerate=False)
+            
+        
+        def __addAudio(self, image):
+            print(image)
+            
+            fpath = self.__audioDirectory + '/' * image["image"]
+            bpy.context.spa.sound_strip_add(
+                filepath= fpath,
+                directory = self.__audioDirectory
+                files = [{"name": image["image"]}], 
+                relative_path=True, frame_start=0, channel=1)
+        
+        def __addSoundtrack(self, image):
+            bpy.context.spa.sound_strip_add(
+            filepath="//../../../Music/mp3/Jewel - Greatest Hits 2013 Pop 320kbps CBR MP3 [VX] [P2PDL]/01 Jewel - Who Will Save Your Soul.mp3", 
+            directory="/home/artista/Music/mp3/Jewel - Greatest Hits 2013 Pop 320kbps CBR MP3 [VX] [P2PDL]/", 
+            files=[{"name":"01 Jewel - Who Will Save Your Soul.mp3", "name":"01 Jewel - Who Will Save Your Soul.mp3"}], 
+            relative_path=True, frame_start=0, channel=1)
 
         def run(self):
-            
+            self.cleanup()
             self.setup()
             file = open(self.__json_file,"r")
             json_str = file.read()
@@ -127,6 +208,14 @@ class AnimationBuilder:
                 self.__frameEnd = self.__frameEnd + image["duration"]
                 if image["type"] == "image":
                     self.__addImage(image)
+                elif image["type"] == "image-sequence":
+                    self.__addImageSequene(image)
+                elif image["type"] == "movie":
+                    self.__addMovie(image)
+                elif image["type"] == "audio":
+                    self.__addAudio(image)
+                elif image["type"] == "soundtrack":
+                    self.__addSoundtrack(image)
 
             bpy.context.scene.frame_end = self.__frameEnd 
             self.__addSubitlesBackground(self.__frameStart, self.__frameEnd)
